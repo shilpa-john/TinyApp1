@@ -2,17 +2,32 @@ const express       = require("express");
 const app           = express();
 const PORT          = 8080; // default port 8080
 const bodyParser    = require("body-parser");
-var   cookieParser  = require('cookie-parser');
+const cookieParser = require('cookie-parser');
 
 
 app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
+
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
+//Users in The Database
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
 
 //Function to generate a random string
 const generateRandomString = () => {
@@ -23,35 +38,62 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
+//Register new user
+app.get("/register", (req, res) => {
+  let templateVars = { user: users[req.cookies.user_id] };
+  res.render("urls_reg", templateVars);
 });
 
-//Route for Login And entering the Username
-app.post("/login", (req, res) => {
-  username = req.body.username;
-  res.cookie("username", username).redirect("/urls");
+//New User Registration
+app.post('/register', (req, res) => {
+    let newUser = generateRandomString();
+    users[newUser] = {
+      id:       newUser,
+      email:    req.body.email,
+      password: req.body.password
+    };
+    res.cookie('user_id', newUser);
+    res.redirect('/urls');
+});
 
+// Login-Authentication
+app.get("/login", (req, res) => {
+  let templateVars = { user:users[req.cookies.user_id] };
+  res.render("login", templateVars);
+});
+
+//Route for Login
+app.post("/login", (req, res) => {
+  let templateVars = { user: users[req.cookies.user_id] };
+  res.cookie('user_id', templateVars);
+  return res.redirect("/urls");
+  });
+
+//Clear the Cookie on logout
+app.post("/logout", (req, res) => {
+  res.clearCookie("user_id").redirect("/urls")
 });
 
 //For urls display
 app.get("/urls", (req, res) => {
-  const templateVars = { username: req.cookies["username"],
+  let templateVars = { 
+    user: users[req.cookies.user_id],
     urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"],
-  }
+  let templateVars = { user: users[req.cookies.user_id] }
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL =  urlDatabase[shortURL];
-  const templateVars = { shortURL, longURL, username: req.cookies["username"]};
+  let templateVars = { shortURL, 
+    longURL, 
+    user: users[req.cookies.user_id]
+  };
   res.render("urls_show", templateVars);
 });
 
@@ -74,18 +116,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.send("Ok");         // Respond with 'Ok' (we will replace this)
 });*/
 
-// Login-Authentication
-/*app.get("/login", (req, res) => {
-  let templateVars = { urls: urlDatabase, username: req.cookies.username};
-  res.render("urls_index", templateVars);
-});*/
-
-//Clear the Cookie on logout
-app.post("/logout", (req, res) => {
-  res.clearCookie("username").redirect("/urls")
-});
 
 //Connecting To The Server!
 app.listen(PORT, () => {
-  console.log(`TinyApp listening on port ${PORT}!`);
-});
+  console.log(`TinyApp listening on port ${PORT}!`)});
