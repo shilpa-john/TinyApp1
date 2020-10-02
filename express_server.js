@@ -1,8 +1,9 @@
-const express       = require("express");
-const app           = express();
-const PORT          = 8080; // default port 8080
-const bodyParser    = require("body-parser");
-const cookieParser = require('cookie-parser');
+const express         = require("express");
+const app             = express();
+const PORT            = 8080; // default port 8080
+const bodyParser      = require("body-parser");
+const cookieParser    = require('cookie-parser');
+const { emailLookUp } = require('./helpers');
 
 
 app.set("view engine", "ejs");
@@ -46,14 +47,22 @@ app.get("/register", (req, res) => {
 
 //New User Registration
 app.post('/register', (req, res) => {
+  if(!req.body.email && !req.body.password)  {
+    res.status(400).send("Invalid details");
+    return;
+  } else if(emailLookUp(req.body.email, users)) {
+    res.status(400).send("User exists!");
+    return;
+  } else {
     let newUser = generateRandomString();
     users[newUser] = {
-      id:       newUser,
-      email:    req.body.email,
+      id: newUser,
+      email: req.body.email,
       password: req.body.password
     };
     res.cookie('user_id', newUser);
     res.redirect('/urls');
+  }
 });
 
 // Login-Authentication
