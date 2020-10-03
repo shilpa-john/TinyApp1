@@ -4,16 +4,16 @@ const PORT            = 8080; // default port 8080
 const bodyParser      = require("body-parser");
 const cookieParser    = require('cookie-parser');
 const { emailLookUp } = require('./helpers');
-
+const { urlsForUser}  = require('./helpers');
 
 app.set("view engine", "ejs");
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "userRandomID" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "user2RandomID" }
 };
 
 //Users in The Database
@@ -77,9 +77,9 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
   const user = emailLookUp(email, users);
   if (user) {
+    console.log("Testing user.password",user.password);
     if (password === user.password) {
-      res.cookie('user_id', user.id);
-      return res.redirect("/urls");
+      res.cookie('user_id', user.id).redirect("/urls");
     } else {
       return res.status(403).send("Wrong Password");
     }
@@ -95,38 +95,56 @@ app.post("/logout", (req, res) => {
 
 //For urls display
 app.get("/urls", (req, res) => {
-  let templateVars = { 
-    user: users[req.cookies.user_id],
-    urls: urlDatabase };
+  const urlsOfUserDatabase = urlsForUser(req.cookies.user_id, urlDatabase);
+  let templateVars = { user: users[req.cookies.user_id], urls: urlsOfUserDatabase };
   res.render("urls_index", templateVars);
 });
 
+//Only Logged- In Users Can Access Urls
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies.user_id) {
+    return res.redirect("/login");
+  }
   let templateVars = { user: users[req.cookies.user_id] }
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+ if (!req.cookies.user_id) {
+   return res.redirect("/urls");
+  }
   const shortURL = req.params.shortURL;
   const longURL =  urlDatabase[shortURL];
-  let templateVars = { shortURL, 
-    longURL, 
-    user: users[req.cookies.user_id]
+  let templateVars = {
+    user: users[req.cookies.user_id],
+    userID: urlDatabase[req.params.shortURL].userID,
+    urls: urlsForUser(req.cookies.user_id, urlDatabase),
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL].longURL
   };
   res.render("urls_show", templateVars);
 });
 
+//Login not required here, user is redirected to longURL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL  =  urlDatabase[shortURL];
-  console.log(longURL);
-  res.redirect(longURL);
+  const longURL =  urlDatabase[shortURL].longURL;
+  if (Object.keys(urlDatabase).includes(shortURL)) {
+    res.redirect(longURL);
+  } else {
+    res.redirect("urls_index", { urls: urlDatabase });
+  }
 });
 
 //Delete URL
 app.post("/urls/:shortURL/delete", (req, res) => {
-  shortURL = req.params.shortURL;
-  delete urlDatabase[shortURL];
+  const userid =  users[req.cookies.user_id].id;
+  const userID = urlDatabase[req.params.shortURL].userID;
+  if (!userid  || userid !== userID) {
+    return res.redirect("/urls");
+  }
+  delete urlDatabase[req.params.shortURL];
+  console.log(urlDatabase);
   res.redirect("/urls");
 });
 
