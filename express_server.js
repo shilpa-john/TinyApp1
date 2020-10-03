@@ -73,12 +73,22 @@ app.get("/login", (req, res) => {
 
 //Route for Login
 app.post("/login", (req, res) => {
-  let templateVars = { user: users[req.cookies.user_id] };
-  res.cookie('user_id', templateVars);
-  return res.redirect("/urls");
+  const email    = req.body.email;  
+  const password = req.body.password;
+  const user = emailLookUp(email, users);
+  if (user) {
+    if (password === user.password) {
+      res.cookie('user_id', user.id);
+      return res.redirect("/urls");
+    } else {
+      return res.status(403).send("Wrong Password");
+    }
+  } else {
+    res.status(403).send("User Not Found");
+  }
   });
 
-//Clear the Cookie on logout
+//Clear the user_id cookie on logout
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id").redirect("/urls")
 });
