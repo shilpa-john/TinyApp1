@@ -4,8 +4,8 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["Page displaying urls when user is logged in"](#https://github.com/shilpa-john/TinyApp1/blob/master/docs/new1.png)
-!["Page For Creating New Url Is Displayed!"](#https://github.com/shilpa-john/TinyApp1/blob/master/docs/new3.png)
+!["Page displaying urls when user is logged in"](https://github.com/shilpa-john/TinyApp1/blob/master/docs/new1.png)
+!["Page For Creating New Url Is Displayed!"](https://github.com/shilpa-john/TinyApp1/blob/master/docs/new3.png)
 
 ## Dependencies
 
